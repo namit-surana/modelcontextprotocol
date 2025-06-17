@@ -304,7 +304,39 @@ async function runServer() {
 }
 
 // Start the server and catch any startup errors
-runServer().catch((error) => {
-  console.error("Fatal error running server:", error);
-  process.exit(1);
+import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+app.get('/tools', async (_req, res) => {
+  res.json([
+    PERPLEXITY_ASK_TOOL,
+    PERPLEXITY_RESEARCH_TOOL,
+    PERPLEXITY_REASON_TOOL
+  ]);
+});
+
+app.post('/call-tool', async (req, res) => {
+  const request = req.body;
+
+  try {
+    const response = await server.handleCallTool(request);
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({
+      content: [{ type: "text", text: `Error: ${error instanceof Error ? error.message : String(error)}` }],
+      isError: true,
+    });
+  }
+});
+
+// (Optional) Render health check
+app.get('/', (_req, res) => {
+  res.send("MCP Perplexity Server is running ✅");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ HTTP MCP Server listening at http://0.0.0.0:${PORT}`);
 });
